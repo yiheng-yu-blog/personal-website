@@ -41,27 +41,27 @@ This post mainly focuses on a general introduction on running a already trained 
 
 First, install dependencies and start an interactive Python session. In the terminal, create a virtual environment so the work in this post doesn't affect other projects:
 
-```Fish
+```Fish{title="terminal"}
 python -m venv transformers 
 ```
 
 If you were using <highlight>windows</highlight>, type these in your terminal:
 
-```powershell
+```powershell{title="powershell"}
 transformers\Scripts\activate
 ```
 
 For <highlight>mac</highlight> and <highlight>linux</highlight>, run:
 
-```bash
+```bash{title="terminal"}
 source transformers/bin/activate
 ```
 
 Then install dependencies and start Python:
 
-```Fish
+```Fish{title="terminal"}
 pip install torch tokenizers -U
-pip install transformers --pre
+pip install transformers -U
 python
 ```
 
@@ -74,22 +74,22 @@ The model in this demo is ```Qwen3```, a small text-generation model that perfor
 
 Import basic dependencies:
 
-```python
+```python{title="python"}
 import pprint
 import torch
 from transformers import AutoModelForCausalLM
 ```
 
 > [!TIP]-for Mac users
-> As of November 2025, Pytorch/ Apple still haven't fully fixed the <a href="https://github.com/pytorch/pytorch/issues/91368">memory leak</a> issue for Apple Silicon devices. As a result, running models with pytorch may gets slower and slower over time, or freeze compeletly. If you were running a Macbook purchased after 2020, I'd recommend manually set pytorch device as 'cpu'.<br>
+> As of November 2025, Pytorch/ Apple still haven't fully fixed the <a href="https://github.com/pytorch/pytorch/issues/91368">memory leak</a> issue for Apple Silicon devices. As a result, running models with pytorch may gets slower and slower over time, or freeze completely. If you were running a Macbook purchased after 2020, I'd recommend manually set pytorch device as 'cpu'.<br>
 > Skip this if you were confident that this memory leak won't happen:
-> ```python
+> ```python{title="python"}
 > torch.set_default_device('cpu')
 > ```
 
 We then download our model from the [huggingface hub](https://huggingface.co/Qwen/Qwen3-0.6B):
 
-```python
+```python{title="python"}
 device = torch.get_default_device()
 checkpoint = r"Qwen/Qwen3-0.6B"  # link to the model
 model = AutoModelForCausalLM.from_pretrained(checkpoint).to(device)
@@ -102,7 +102,7 @@ model.requires_grad_(False)  # setting our model in inference mode
 
 Now we try some inputs:
 
-```python
+```python{title="python"}
 >>> model.generate("this is a test input")
 ...
    2546 if "inputs_tensor" in inspect.signature(decoding_method).parameters.keys():
@@ -116,7 +116,7 @@ AttributeError: 'str' object has no attribute 'shape'
 
 ```help(model.generate)``` explains that our model expects```torch.Tensor```, instead of ```str```:
 
-```python
+```python{title="python"}
 Help on method generate in module transformers.generation.utils:
 ...
 Parameters:
@@ -130,7 +130,7 @@ Parameters:
 
 In order to run the model, we need to convert text into `torch.Tensor` objects.
 
-Almost all transformer models would require one to first convert inputs into model-readable formats. Ways of data preprocessing changes greatly depending on our desired inputs and desired output. Taking image generation for example, our inputs would be texts ('generate me a cat pictrure') and our outputs would be images ('cat-picture.png'). There are a lot of different processors, depending on your task. Here are some examples:
+Almost all transformer models would require one to first convert inputs into model-readable formats. Ways of data preprocessing changes greatly depending on our desired inputs and desired output. Taking image generation for example, our inputs would be texts ('generate me a cat picture') and our outputs would be images ('cat-picture.png'). There are a lot of different processors, depending on your task. Here are some examples:
 
 |Type|Example Processor|
 |--|--|
@@ -151,7 +151,7 @@ Despite all these variations, all these processors are doing essentially the sam
 
 Let's go back to our text generation example. Raw text data is processed via [tokenisation](https://arxiv.org/html/2407.11606v3). Technic details behind this process very complicated, you can check out a more detailed [guide](https://huggingface.co/docs/transformers/tokenizer_summary). When it comes to production, you can simply think tokenisers as some sort of very glorified look-up tables that converts texts into indices that our ```model``` recognises:
 
-```python
+```python{title="python"}
 from transformers import AutoTokenizer
 tokenizer = AutoTokenizer.from_pretrained(checkpoint)
 example = "Hi!"
@@ -161,20 +161,20 @@ pprint.pprint(token)
 
 This converts our result to model-ready format:
 
-```python
+```python{title="python"}
 {'input_ids': tensor([[13048,     0]]), 'attention_mask': tensor([[1, 1]])}
 ```
 
 Let's now try with model generation:
 
-```python
+```python{title="python"}
 result = model.generate(**token, max_new_tokens=20)  # set max-length to stop model generating forever
 print(result)
 ```
 
 Output:
 
-```python
+```python{title="python"}
 tensor([[13048,     0,   358,  1184,  1492,   448,   419,  3491,    13,   576,
           3491,  2727,    25,   362,   220,    16,    15,    15,    15, 20972,
           3745,   374]])
@@ -182,12 +182,12 @@ tensor([[13048,     0,   358,  1184,  1492,   448,   419,  3491,    13,   576,
 
 And use our ```tokenizer``` to convert result back to human readable form:
 
-```python
+```python{title="python"}
 print(tokenizer.decode(result))
 ```
 
 Output:
-```python
+```python{title="python"}
 >>> print(tokenizer.decode(result))
 ...
 ['Hi! I need help with this problem. The problem says: A 1000 kg box is']
@@ -195,7 +195,7 @@ Output:
 #### Chat template
 Although our model indeed generated something meaningful, this output isn't really what we've expected! This is because our model, just like most of other chat-based text generation models, expects inputs in a very **specific** format: **chats**:
 
-```python
+```python{title="python"}
 text = "Hi!"
 message = [{"role":"user", "content": text}]  # format our input as chat message
 message = tokenizer.apply_chat_template(
@@ -209,7 +209,7 @@ print(message)
 
 As seen in the output, our input text is now formatted as chat that message that model would recognise:
 
-```python
+```python{title="python"}
 ...
 <|im_start|>user
 Hi!<|im_end|>
@@ -222,7 +222,7 @@ Hi!<|im_end|>
 
 Now we tokenize the message and run the text generation
 
-```python
+```python{title="python"}
 token = tokenizer(message, return_tensors="pt")
 result = model.generate(**token, max_new_tokens=20)
 print(tokenizer.decode(result)[0])
@@ -230,7 +230,7 @@ print(tokenizer.decode(result)[0])
 
 Output:
 
-```python
+```python{title="python"}
 <|im_start|>user
 Hi!<|im_end|>
 <|im_start|>assistant
@@ -244,7 +244,7 @@ Hello! How can I assist you today?<|im_end|>
 
 In addition to the text generated by the model, our raw output also contains input text. We can get rid of them:
 
-```python
+```python{title="python"}
 generated_tokens = result[0, token['input_ids'].shape[1]:]
 generated_text = tokenizer.decode(generated_tokens, skip_special_tokens=True)
 print(generated_text)
@@ -252,7 +252,7 @@ print(generated_text)
 
 We finally get our decoded output:
 
-```python
+```python{title="python"}
 Hello! How can I assist you today?
 >>>
 ```
@@ -261,7 +261,7 @@ Hello! How can I assist you today?
 
 Putting everything together, here's our text-generation function:
 
-```python
+```python{title="python"}
 from functools import partial
 def run_text_generation(
   model, tokenizer, input_text, enable_thinking=False, max_new_tokens=256
@@ -288,7 +288,7 @@ generate = partial(run_text_generation, model, tokenizer)
 
 To run our function:
 
-```python
+```python{title="python"}
 generate("how are you?", enable_thinking=True)  # Let's try with thinking mode!
 ```
 
@@ -339,7 +339,7 @@ Let's use text-generation as our example. We will be using the same [QWEN3](http
 
 Getting the model & the tokenizer:
 
-```python
+```python{title="python"}
 import pprint
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -355,7 +355,7 @@ tokenizer = AutoTokenizer.from_pretrained(checkpoint)
 
 All transformer models can be conceptually divided into  two parts: a ```base_model``` that computs inputs and produces raw logits, and a ```task_head``` that process the raw logits into task-specific outputs:
 
-```python
+```python{title="python"}
 >>> base_model = model.model
 ... task_head = model.lm_head
 ...
@@ -369,11 +369,11 @@ task head: Linear(in_features=1024, out_features=151936, bias=False)
 
 ### Text generation, step-by-step
 
-Let's go back to our previous exmaple and have a look at how matrices are transformed throughout the entire process.
+Let's go back to our previous example and have a look at how matrices are transformed throughout the entire process.
 
 We first create an text input:
 
-```python
+```python{title="python"}
 message = [{'role': 'user', 'content': 'how are you?'}]
 tokens = tokenizer.apply_chat_template(
   message, 
@@ -392,7 +392,7 @@ We can see that through the tokenizer, our text input was converted from a list 
 
 The **batch_index** of **1** here means the model is processing 1 single text entry; where the **token_indices** of **16** means there are 16 tokens in our text input:
 
-```python
+```python{title="python"}
 ...
 length of formatted text: 1
 shape of converted tokens: torch.Size([1, 16])
@@ -401,7 +401,7 @@ shape of converted tokens: torch.Size([1, 16])
 
 Let's first take a look at what our text gets transformed into:
 
-```python
+```python{title="python"}
 >>> converted_tokens = tokenizer.convert_ids_to_tokens(inputs[0])
 >>> pairs = list(zip(inputs[0].tolist(), converted_tokens))
 >>> pprint.pprint(pairs)
@@ -427,9 +427,9 @@ Let's first take a look at what our text gets transformed into:
 
 > For our tokenizer, white spaces are represented by symbol **Ġ** and **Ċ**.
 
-As we can see from the output, our input gets formatted into a chats, and then conveted into a matrix of integers, with each entry represent the ```token_id``` of the corresponding text string. If you ```print(inputs)```, you would see the actual inputs that model receives:
+As we can see from the output, our input gets formatted into a chats, and then converted into a matrix of integers, with each entry represent the ```token_id``` of the corresponding text string. If you ```print(inputs)```, you would see the actual inputs that model receives:
 
-```python
+```python{title="python"}
 >>> print(inputs)
 tensor([[151644,    872,    198,   5158,    525,    498,     30, 151645,    198,
          151644,  77091,    198, 151667,    271, 151668,    271]])
@@ -439,7 +439,7 @@ tensor([[151644,    872,    198,   5158,    525,    498,     30, 151645,    198,
 ***
 We then pass our the tokens to the base model:
 
-```python
+```python{title="python"}
 output = base_model(**tokens)
 last_hidden_state = output.last_hidden_state
 print("shape of base_model output:", last_hidden_state.shape)
@@ -447,7 +447,7 @@ print("shape of base_model output:", last_hidden_state.shape)
 
 Result:
 
-```python
+```python{title="python"}
 ...
 shape of base_model output: torch.Size([1, 16, 1024])
 ```
@@ -458,7 +458,7 @@ Through the ```base_model```, our input tokens of size \(1 \times 16\) gets tran
 
 This output from our ```base_model``` can be seen as the final transformed matrix representation of our original input data:
 
-```python
+```python{title="python"}
 >>> print(last_hidden_state)
 tensor([[[  5.0938,  18.7500,  -0.2129,  ...,  -0.9297,   0.7852,   0.8203],
          [  1.7891,  26.6250,  -1.1484,  ...,  -3.8906,  -3.3906,  -0.8125],
@@ -474,7 +474,7 @@ tensor([[[  5.0938,  18.7500,  -0.2129,  ...,  -0.9297,   0.7852,   0.8203],
 ***
 We then pass the output of  ```base_model``` to the ```task_head```:
 
-```python
+```python{title="python"}
 model_output = task_head(last_hidden_state)
 print("shape of the final model output:", model_output.shape)
 print("vocabulary size:", len(tokenizer.vocab))
@@ -482,7 +482,7 @@ print("vocabulary size:", len(tokenizer.vocab))
 
 Result:
 
-```python
+```python{title="python"}
 ...
 shape of the final model output: torch.Size([1, 16, 151936])
 vocabulary size: 151669
@@ -496,7 +496,7 @@ Where **token_score** refers to the *score* for the next token index (next text)
 
 To get our 17th token, we only need the last sequence of our ```model_output```:
 
-```python
+```python{title="python"}
 next_token_score = model_output[:, -1, :]
 print("shape of next_token_score:", next_token_score.shape)
 print("value of next_token_score:", next_token_score)
@@ -504,7 +504,7 @@ print("value of next_token_score:", next_token_score)
 
 Result:
 
-```python
+```python{title="python"}
 ...
 shape of next_token_score: torch.Size([1, 151936])
 value of next_token_score: tensor([[14.1250, 12.9375,  7.6875,  ...,  4.3750,  4.3750,  4.3750]],
@@ -513,7 +513,7 @@ value of next_token_score: tensor([[14.1250, 12.9375,  7.6875,  ...,  4.3750,  4
 
 To convert score to probablities, although not necessary, use ```softmax```:
 
-```python
+```python{title="python"}
 >>> next_token_probability = torch.nn.functional.softmax(next_token_score, dim=-1)
 >>> print(next_token_probability)
 tensor([[9.7603e-07, 2.9802e-07, 1.5643e-09,  ..., 5.7071e-11, 5.7071e-11,
@@ -521,9 +521,9 @@ tensor([[9.7603e-07, 2.9802e-07, 1.5643e-09,  ..., 5.7071e-11, 5.7071e-11,
 ```
 
 ***
-Finally, we need to use ```tokenizer``` to convert model output to human-redable format. We use tokens with highest ```next_token_score``` as the next token for text generation:
+Finally, we need to use ```tokenizer``` to convert model output to human-readable format. We use tokens with highest ```next_token_score``` as the next token for text generation:
 
-```python
+```python{title="python"}
 top_score, top_token_index = next_token_score.topk(1, dim=-1)
 print("top 1 score:", top_score)
 print("top 1 next token index:", top_token_index)
@@ -532,7 +532,7 @@ print("shape of output:", top_token_index.shape)
 
 Our ```top_token_index``` matrix has shape \( 1 \times 1 \):
 
-```python
+```python{title="python"}
 ...
 top 1 score: tensor([[27.7500]], dtype=torch.bfloat16)
 top 1 next token index: tensor([[9707]])
@@ -544,14 +544,14 @@ That is **batch_index** \( \times \) **top1_token_index**
 ***
 We use ```tokenizer```, the processor for text transformers, to decode ```top_token_index``` back to text:
 
-```python
+```python{title="python"}
 decoded_next_token = tokenizer.decode(top_token_index)
 print(decoded_next_token)
 ```
 
 And here it is:
 
-```python
+```python{title="python"}
 ...
 ['Hello']
 ```

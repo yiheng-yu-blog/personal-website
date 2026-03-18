@@ -111,13 +111,13 @@ First, open your terminal and type:
 
 For Mac/ Linux:
 
-```sh
+```sh{title="terminal"}
 open .
 ```
 
 For windows:
 
-```cmd
+```cmd{title="terminal"}
 start .
 ```
 
@@ -125,7 +125,7 @@ This will open the file explorer to the folder that's currently in.
 
 Create a new .txt file in that folder, copy these texts into the txt file:
 
-```text
+```text{title="script.txt"}
 print("Hello!")
 ```
 
@@ -133,13 +133,13 @@ Save this file as 'script.txt'.
 
 Go back to terminal, and you can open this file with python by:
 
-```fish
+```fish{title="terminal"}
 python script.txt
 ```
 
 And you should see the result:
 
-```fish
+```fish{title="terminal"}
 Hello!
 ```
 
@@ -266,7 +266,7 @@ In addition to the ease of use, here are list of things that I found really good
 
 However, it also comes with it's own share of problems:
 
-- It's an open-source, community-based project, and as a result there are all sorts of bugs here and there. Most of them are tolerable. For example, Due to the way it works, the Spyder console doesn't handle termianl async very well. Bugs like this are relatively easy to spot out and by the time you encounter them, you should already gained enough knowledge on how to handle them.
+- It's an open-source, community-based project, and as a result there are all sorts of bugs here and there. Most of them are tolerable. For example, Due to the way it works, the Spyder console doesn't handle terminal async very well. Bugs like this are relatively easy to spot out and by the time you encounter them, you should already gained enough knowledge on how to handle them.
 - Spyder does not work with GUI building tools like [```tkinter```](https://docs.python.org/3/library/tkinter.html) or [```PyQt```](https://pypi.org/project/PyQt6/). These are packages for writing applications with graphical user interface.
 - Although it do support [notebook](https://docs.Spyder-ide.org/current/plugins/notebook.html), I found using notebooks in Spyder overall very painful. It's slow, unresponsive, and frustrating.
 - Spyder does not have much support for non-python language.

@@ -14,20 +14,22 @@ params:
 
 {{< katex >}}
 
-In this particular post, I would like to do a very brief overview of the transformer model architecture, specifically on the attention mechanism. I won't go into too much math and there won't be any mathematical formulas. However, I would assume readers of this silly little post already have some okay-ish background in math/datascience. (i.e., matrix computations, embeddings, tokens, model fitting etc.). I am not going to list out all the implementation details for transformers, since there are a lot of very good materials out there and they are doing fantastic jobs. Instead, in this (maybe series of?) post, I would like to draw out a general framework on transformers to help one understand the detailed math behind.<br>
+In this particular post, I would like to do a very brief overview of the transformer model architecture, specifically on the attention mechanism. I won't go into too much math and there won't be any mathematical formulas. However, I would assume readers of this silly little post already have some okay-ish background in math/data science. (i.e., matrix computations, embeddings, tokens, model fitting etc.). I am not going to list out all the implementation details for transformers, since there are a lot of very good materials out there and they are doing fantastic jobs. Instead, in this (maybe series of?) post, I would like to draw out a general framework on transformers to help one understand the detailed math behind.<br>
 
-Today, I'll very quickly go through some very basics on neural network model, just enough to cover what needed for this post, accompied by demo of transformer model as a proof of concept. In this section, there will be some codes that you can copy and paste into an interactive python session to fiddle around for a bit. And lastly, I'll do a quick sketch on the general architecture of transformers, and a overview of the attention mechasm.<br>
+Today, I'll very quickly go through some very basics on neural network model, just enough to cover what needed for this post, accompanied by demo of transformer model as a proof of concept. In this section, there will be some codes that you can copy and paste into an interactive python session to fiddle around for a bit. And lastly, I'll do a quick sketch on the general architecture of transformers, and a overview of the attention mechanism.<br>
 
 ## Model only needs to be useful
 
-In order to make things easier to understand, I would wish to start with an inaccuate premise: we can view neural network models as functions that takes some sort of matrix as inputs, do some sort of matrix computations, and output another matrix as the final result. What makes one neural network different from others is how the computation is carried out. It's like \(y=a \times x^2\) is a different function from \(y=a \times sin(x)\), only that in the case of neural network, both x and y are matrices, and the math is much complicated. When it comes to model training, we are essentially trying to find values gives best fit to the data.<br>
+In order to make things easier to understand, I would wish to start with an inaccurate premise: we can view neural network models as functions that takes some sort of matrix as inputs, do some sort of matrix computations, and output another matrix as the final result. What makes one neural network different from others is how the computation is carried out. It's like \(y=a \times x^2\) is a different function from \(y=a \times sin(x)\), only that in the case of neural network, both x and y are matrices, and the math is much complicated. When it comes to model training, we are essentially trying to find values gives best fit to the data.<br>
 
 There's an important assumption here: just because a model fits the data well does not mean the model describes the mechanisms behind the data. For example, we <i>definitely</i> can fit \(y=a \times sin(x) + b\) to a normal distribution data (like distribution of customer spendings in McDonald's), and it's probably going to be a pretty good fit, but this does not mean the sine function has anything to do with explaining the normal distribution. A good model does not always need to be a description; a good model just needs to be useful for its purpose.<br>
 
 Transformers are precisely these kinds of models: they are, surprisingly good at fitting into all sorts of data whilst the math behind the model probably doesn't have much to do with the mechanisms behind. We don't know how transformers work so well for text-based tasks. At least not yet. Originally, transformer was designed as an add-on to text-processing neural network models in order to tackle some tricky problems (these problems are not the main focus of the current blogpost so I'm skipping them, but [here's a good article if you were interested](https://towardsdatascience.com/beautifully-illustrated-nlp-models-from-rnn-to-transformer-80d69faf2109/)). We just happened to discover that transformers alone is good enough to solve these problems; we just need to make the transformers much bigger. So that's where the AI boom started: GPT2 solved issues in GPT1 by simply being 10 times bigger; the most-recently open-sourced [pretrained GPT-OSS](https://huggingface.co/mistralai/Mixtral-8x7B-v0.1) is 200 times bigger than [the previous open-sourced model, GPT2](https://huggingface.co/openai-community/gpt2) <i>(note: GPT-OSS is structurally different from the original GPT2 but the fundamental ideas are the same.)</i> There are even speculations suggesting transformer neural network models can be seen as some sort of universal function approximator. That is, it's capable of 'approximating' other formulas/functions with a certain degree of accuracy, providing the model itself is big enough (['universal approximation theorem'](https://en.wikipedia.org/wiki/Universal_approximation_theorem)). <br>
 
 ## Transformer Model Architecture
+
 ### Overview
+
 At conceptual level, the general idea behind transformer models is actually pretty intuitive. We can roughly divide the model calculations into three stages:
 {{< timeline >}}
 
@@ -48,6 +50,7 @@ At conceptual level, the general idea behind transformer models is actually pret
 In other words, you can conceptually see **Stage 1** as a conversion stage in order to initiate the model, **Stage 2** being the core of a transformer model, and **Stage 3** as a 'decoding' step to convert the output back into human-readable form. When we talk about transformer models, we are mostly referring to **Stage 2**, which is the focus of the current post. I'll elaborate a lot more on what's happening in **Stage 3** in the next post.<br>
 
 ### The Transformer Itself
+
 The transformer itself is pretty straightforward: it consists of stacks of multiple attention layers that often share exactly the same, or very similar structure:
 {{< mermaid >}}
 ---
@@ -112,6 +115,7 @@ flowchart TB
 3. <bullet>Step 3: The third matrix from step (1) combines with output from step (2), using some other matrix operation.</bullet>
 
 ## Example: Qwen3
+
 We'll now take a look at an actual transformer model and see how it works in action.
 It's very suprising is that, transformers are able to produce pretty impressive results for tasks model that are not specifically trained for. Here, we'll use [Qwen3, a small-sized text generation model](https://qwen.ai/blog?id=qwen3) as a demo. It's tiny (~1.5GB) but the performance is VERY impressive for its size.<br>
 Here's huggingface's link to the model: <br>
@@ -122,21 +126,21 @@ Make sure you have python pre-installed. If you were using windows, python can b
 
 We first need to install some dependencies. Open terminal/ command prompt, type this command to install required dependencies:<br>
 
-```Fish
+```Fish{title="terminal"}
 pip install torch transformers
 ```
 And then type:<br>
-```Fish
+```Fish{title="terminal"}
 python
 ```
 To open python and start an interactive python session.<br><br>
 *Alternatively, if you installed [ipython](https://ipython.org/install.html), which should already be installed if you have installed [jupyter notebook](https://jupyter.org/install) previously, you can open ipython instead:*
-```Fish
+```Fish{title="terminal"}
 ipython
 ```
 
 Once python was opened, copy and paste these lines into python to import required packages:
-```python
+```python{title="python"}
 from pprint import pprint
 import re
 from transformers import AutoModelForCausalLM, AutoTokenizer, BatchEncoding
@@ -146,7 +150,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BatchEncoding
 ### Get the model
 Models from ```transformers``` library takes matrices as inputs, and outputs matrices. Thus, text generation models needs to be paired with ```tokenizer``` in order to convert inputs into model-readable formant, and convert model outputs into human-readble format. ```transformers``` library has a special class called ```TextGenerationPipeline``` to handle this conversion class, but would be a bit too complicated for our purpose. Here, I modified demo code from <a href='https://huggingface.co/Qwen/Qwen3-0.6B'>Qwen3's demo code</a> that simply combines tokenizers and models together. Here's the code for you to copy and paste into the currently running python session:
 
-```python
+```python{title="python"}
 class DemoChatbot:
     """
     A simple demo chatbot, code modified from https://huggingface.co/Qwen/Qwen3-0.6B
@@ -198,17 +202,17 @@ class DemoChatbot:
 ```
 
 Then, create a new chat instance with the code below:
-```python
+```python{title="python"}
 chat = DemoChatbot()
 ```
 You will see a progress bar showing download status. Once completed, type the following to have a look at the QWen3 model structure:
-```python
+```python{title="python"}
 pprint(chat.model)
 ```
 
 …which in term will give you this output:
 
-```python
+```python{title="python"}
 Qwen3ForCausalLM(
   (model): Qwen3Model(
     (embed_tokens): Embedding(151936, 1024)
@@ -241,13 +245,13 @@ Qwen3ForCausalLM(
 
 ### Model Architecture
 The very core of a transformer model can be checked by:
-```python
+```python{title="python"}
 pprint(chat.model.model)
 ```
 
 And you will get an output similar to the previous output, but without ```lm_head``` at the end:<br>
 
-```python
+```python{title="python"}
 Qwen3Model(
   (embed_tokens): Embedding(151936, 1024)
   (layers): ModuleList(
@@ -278,13 +282,13 @@ Qwen3Model(
 The ```embed_tokens``` is the [**Stage 1**](#overview) mentioned earlier, and the ```lm_head``` is the [**Stage 3**](#overview). The core of a transformer, is what we've been discussing today.<br>
 
 Let's have a look at one of the layers inside the transformer:<br>
-```python
+```python{title="python"}
 layer = chat.model.model.layers[0]
 pprint(layer)
 ```
 
 You will see something like this:
-```python
+```python{title="python"}
 Qwen3DecoderLayer(
   (self_attn): Qwen3Attention(
     (q_proj): Linear(in_features=1024, out_features=2048, bias=False)
@@ -316,7 +320,7 @@ pprint(attention)
 ```
 
 The ```q_proj```, ```k_proj``` and ```v_proj``` are the [three matrices](#the-attention-head) mentioned earlier:
-```python
+```python{title="python"}
 Qwen3Attention(
   (q_proj): Linear(in_features=1024, out_features=2048, bias=False)
   (k_proj): Linear(in_features=1024, out_features=1024, bias=False)
@@ -333,19 +337,19 @@ The actual implementations of attention heads are different from model to model,
 ### Have some fun!
 Meanwhile, since we've got a generative model already, we might as well test out some text generations:
 
-```python
+```python{title="python"}
 chat("Why is the content, which was held to be true in perceiving, in fact only belongs to the form, and it dissolves into the form’s unity 🥺🥺🥺🥺🥺??")
 ```
 
 Or, you can turn on the 'thinking' mode to enable chain-of-thought:
 
-```python
+```python{title="python"}
 chat.enable_thinking = True
 chat("But...but the phenomenology Φ147 says the inner, essential is essentially the truth of appearance😠😠😠 I'm absolutely fewming")
 ```
 
 If it takes too long to run, you can clear chat history to remove cached chats:
-```python
+```python{title="python"}
 chat.clear_history()
 ```
 

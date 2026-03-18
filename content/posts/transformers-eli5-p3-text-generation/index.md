@@ -31,13 +31,13 @@ Rather than building things bottom-up by covering all the basics first, when it 
 
 [Install miniconda first](https://www.anaconda.com/docs/getting-started/miniconda/install##quickstart-install-instructions) if you haven't already. After installing, open terminal and type:
 
-```Fish
+```Fish{title="terminal"}
 conda create -n transformers python=3.13 -y
 ```
 
 And then activate the environment you've created:
 
-```fish
+```fish{title="terminal"}
 conda activate transformers
 ```
 
@@ -47,19 +47,19 @@ conda activate transformers
 
 First, install dependencies and start an interactive Python session. In the terminal, create a virtual environment so the work in this post doesn't affect other projects:
 
-```Fish
+```Fish{title="terminal"}
 python -m venv transformers 
 ```
 
 If you were using <highlight>windows</highlight>, type these in your terminal:
 
-```powershell
+```powershell{title="powershell"}
 transformers\Scripts\activate
 ```
 
 For <highlight>mac</highlight> and <highlight>linux</highlight>, run:
 
-```Fish
+```Fish{title="terminal"}
 source transformers/bin/activate
 ```
 
@@ -69,10 +69,10 @@ source transformers/bin/activate
 
 Then install dependencies and start Python:
 
-```Fish
+```Fish{title="terminal"}
 pip install rich -U
 pip install torch tokenizers -U
-pip install transformers --pre
+pip install transformers -U
 python
 ```
 
@@ -81,7 +81,7 @@ All set.
 
 In python, copy and paste these codes to import dependencies:
 
-```python
+```python{title="python"}
 import pprint
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -91,7 +91,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 > As of November 2025, Pytorch/ Apple still haven't fully fixed the <a href="https://github.com/pytorch/pytorch/issues/91368">memory leak</a> issue for Apple Silicon devices. As a result, running models with pytorch may gets slower and slower over time, or freeze compeletly. If you were running a Macbook purchased after 2020, I'd recommend manually set pytorch device as 'cpu'.<br>
 > Skip this if you were confident that this memory leak won't happen:
 >
-> ```python
+> ```python{title="python"}
 > torch.set_default_device('cpu')
 > ```
 
@@ -105,7 +105,7 @@ Same as [previous posts](https://yuyiheng.cc/topics/transformers/), we'll be usi
 
 And to download our model:
 
-```python
+```python{title="python"}
 device = torch.get_default_device()
 
 checkpoint = r"Qwen/Qwen3-0.6B"  ## link to the model
@@ -117,7 +117,7 @@ model.generation_config.max_new_tokens = 256  ## to make things runs slightly qu
 
 You would see a status bar whilst downloading & loading our model:
 
-```python
+```python{title="python"}
 ...
 Loading weights: 100%|██| 311/311 [00:00<00:00, 4366.64it/s, Materializing param=model.norm.weight]
 The tied weights mapping and config for this model specifies to tie model.embed_tokens.weight to lm_head.weight, but both are present in the checkpoints, so we will NOT tie them. You should update the config with `tie_word_embeddings=False` to silence this warning
@@ -142,13 +142,13 @@ flowchart LR
 
 We'll be working with an example message for our text generation demo:
 
-```python
+```python{title="python"}
 example = "how are you?"
 ```
 
 In order for model to perform optimally, input data needs to be formatted similar to what model was originally trained on. For our **QWEN3** model, it's this specific **chat format**:
 
-```python
+```python{title="python"}
 message = [{"role":"user", "content": example}]
 formatted_example = tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True, enable_thinking=False)
 print(formatted_example)
@@ -156,7 +156,7 @@ print(formatted_example)
 
 Our formatted input texts looks like this:
 
-```python
+```python{title="python"}
 ...
 <|im_start|>assistant
 <think>
@@ -168,7 +168,7 @@ Our formatted input texts looks like this:
 
 Models from ```transformers``` library do not accepts raw texts as inputs, only integers of token indicies. We need to convert our formatted texts to tokens before passing to our model:
 
-```python
+```python{title="python"}
 tokens = tokenizer(formatted_example, return_tensors="pt")
 
 ## or via tokenizer.apply_chat_template with tokenize=True:
@@ -188,7 +188,7 @@ print(tokens) ## {'input_ids': tensor([[151644,  77091,    198, 151667,    271, 
 
 Text generation models from the ```transformers``` library provides a very easy and simple API for text generation, ```model.generate```:
 
-```python
+```python{title="python"}
 >>> result = model.generate(**tokens)
 ... generated = result[0, tokens['input_ids'].shape[1]:]  ## skip input tokens
 ... print(generated)
@@ -199,7 +199,7 @@ tensor([9707, 0, 2585, 525, 498, 3351, 30, 26525, 232, 151645])
 
 Then, we convert raw output back to human-readable format via tokenizer.decode:
 
-```python
+```python{title="python"}
 >>> tokenizer.decode(generated)
 'Hello! How are you today? 😊<|im_end|>'
 ```
@@ -208,7 +208,7 @@ Then, we convert raw output back to human-readable format via tokenizer.decode:
 
 ## Text generation explained
 
-The text generation via method ```model.generate()``` is essentially running ```model.forward``` over and over till model genrates end of srequence token (as defined in ```model.config.eos_token_id```)
+The text generation via method ```model.generate()``` is essentially running ```model.forward``` over and over till model generates end of sequence token (```model.config.eos_token_id```)
 
 Now that we know the basics of text generation, we can take a look at how text generation works.
 
@@ -218,11 +218,11 @@ Now that we know the basics of text generation, we can take a look at how text g
 #### CausalLMOutputWithPast object
 
 
-To understand how text generated, we can start with the raw output of our model, and see how raw outputs are converted to human-redable texts in the ```post process``` stage. 
+To understand how text generated, we can start with the raw output of our model, and see how raw outputs are converted to human-readable texts in the ```post process``` stage. 
 
 We pass our pre-processed inputs ```tokens['input_ids']``` to our model to get raw model output:
 
-```python
+```python{title="python"}
 inputs = tokens['input_ids']
 output = model.forward(inputs)
 pprint.pprint(output)
@@ -230,7 +230,7 @@ pprint.pprint(output)
 
 Outputs from our model contains a lot of things, as you can see here:
 
-```python
+```python{title="python"}
 CausalLMOutputWithPast(
   loss=None, 
   logits=tensor([[[ 3.5938,  3.7812,  3.6562,  ...,  1.6484,  1.6484,  1.6484],
@@ -247,7 +247,7 @@ CausalLMOutputWithPast(
 )
 ```
 
-Here's a quick explaination:
+Here's a quick explanation:
 
 |name|explain|
 |--|--|
@@ -263,7 +263,7 @@ Here's a quick explaination:
 
 Let's compare our inputs and outputs:
 
-```python
+```python{title="python"}
 >>> print("Model inputs:", inputs.shape)
 >>> print("Model outputs:", output.logits.shape)
 ...
@@ -277,7 +277,7 @@ We can see that through our model (```model.forward(inputs)```), input of size *
 
 The size of last dimension of our model output ```output.logits```,  ```151936``` matches the ```vocab_size``` of our tokenizer:
 
-```python
+```python{title="python"}
 >>> tokenizer.vocab_size
 151643
 ```
@@ -292,7 +292,7 @@ For example, item ```[0, 3, 250]``` in our ```output.logits``` means:
 
 And the value is ```7.5625```:
 
-```python
+```python{title="python"}
 >>> output.logits[0, 3, 25]
 tensor(7.5625, dtype=torch.bfloat16)
 ```
@@ -303,33 +303,33 @@ tensor(7.5625, dtype=torch.bfloat16)
 
 The last dimension of model output ```output.logits``` also matches ```out_features``` of the very last layer of our ```model```:
 
-```python
+```python{title="python"}
 >>> model.lm_head
 Linear(in_features=1024, out_features=151936, bias=False)
 ```
 
 This ```lm_head``` takes matrix with last dimension of size **1024** (```in_features```) as inputs, and outputs matrix with last dimension of size **151936** (```out_features```), for example, for our 5th token, the scores are:
 
-```python
+```python{title="python"}
 >>> output.logits[0, 4, :]
 tensor([ 2.9062,  4.3438,  2.5469,  ..., -2.0312, -2.0312, -2.0312],
        dtype=torch.bfloat16)
 ```
 
-Where each score can be seen as **model's confidence score of the next token**. For example, the word '*pub*' would be more likely to be the next word following sentence '*I had some beer from the*',  compared with word '*t-shrit*'. The ```output.logits``` above is just a mathemathical way of describing of this difference in likelihood. To get the token with highest likelihood, use ```topk```:
+Where each score can be seen as **model's confidence score of the next token**. For example, the word '*pub*' would be more likely to be the next word following sentence '*I had some beer from the*',  compared with word '*t-shirt*'. The ```output.logits``` above is just a mathematical way of describing of this difference in likelihood. To get the token with highest likelihood, use ```topk```:
 
-```python
+```python{title="python"}
 highest_value, highest_index = output.logits[0, 4, :].topk(1)
 previous_token = inputs[0, :5]
 previous_text = tokenizer.decode(previous_token)
 model_prediction = tokenizer.decode(highest_index[0])
-print('Prevous text:', previous_text, sep="\n", end="\n================\n")
+print('Previous text:', previous_text, sep="\n", end="\n================\n")
 print("Next token predicted by the model:", model_prediction, sep="\n")
 ```
 
 Output:
 
-```python
+```python{title="python"}
 ...
 Prevous text:
 <|im_start|>user
@@ -342,7 +342,7 @@ Next token predicted by the model:
 
 So given our input ```formatted_example```, the most likely next token, as predicted by the model, would be:
 
-```python
+```python{title="python"}
 >>> next_token_score, next_token_index = output.logits[:, -1, :].topk(1)
 >>> next_token = tokenizer.decode(next_token_index)
 >>> print(next_token)
@@ -356,13 +356,13 @@ So given our input ```formatted_example```, the most likely next token, as predi
 
 To recap what we've found so far:
 
-1. Output of models from ```transformers``` library (via ```model.forward(inputs)```) contains lots of things for caching/ debugging etc. The raw output is the ```logits``` attribtue of ```ModelOutput``` objects.
+1. Output of models from ```transformers``` library (via ```model.forward(inputs)```) contains lots of things for caching/ debugging etc. The raw output is the ```logits``` attribute of ```ModelOutput``` objects.
 
 2. Raw output (```logits```) for text generation models can be considered as model's confidence score of the next token.
 
 Value of ```logits``` for a given token depends not only on the token itself, but also on all the tokens in front of it. For example:
 
-```python
+```python{title="python"}
 dog = tokenizer(" dog", return_tensors="pt")
 hi_dog = tokenizer("Hi dog", return_tensors="pt")
 hi_dog_how_are_you = tokenizer("Hi dog how are you?", return_tensors="pt")
@@ -381,7 +381,7 @@ print("Value of 'dog' in 'Hello dog':\n", output_hello[:, 1, :])
 
 We can see that the value of the token “dog” is influenced only by the text that comes **before** it, and not by any text that comes *after* it:
 
-```python
+```python{title="python"}
 Value of ' dog' itself:
  tensor([[5.0000, 4.5938, 4.0312,  ..., 1.2266, 1.2266, 1.2266]], dtype=torch.bfloat16)
 Value of 'dog' in 'Hi dog':
@@ -400,7 +400,7 @@ For text generation, the selection of next token is based on the *mathematical r
 
 To demonstrate, let's use the shorter, unformatted text input instead:
 
-```python
+```python{title="python"}
 example = "Hi, how are you doing today?"
 tokens = tokenizer(example, return_tensors="pt")
 inputs = tokens['input_ids']
@@ -410,7 +410,7 @@ logits = outputs.logits
 
 And to make things easier to read, let's put everything in a nice table (via ```rich``` library):
 
-```python
+```python{title="python"}
 from rich.console import Console
 from rich.table import Table
 
@@ -450,12 +450,12 @@ And here's the output:
 └──────────────────────────────┴──────────────────────────┘
 ```
 
-### It's really just sequence lassification
+### It's really just sequence classification
 
 To further prove this point, we'll use a *text classification* model to do our text generation task.
 Here's the code that does exactly this:
 
-```python
+```python{title="python"}
 from transformers import AutoModelForSequenceClassification, AutoConfig
 vocab_size = model.config.vocab_size
 model = AutoModelForSequenceClassification.from_pretrained(
@@ -467,7 +467,7 @@ model = AutoModelForSequenceClassification.from_pretrained(
 
 > [!info]-code explaination 
 > ```huggingface```'s ```transformers``` models are written in ```torch```, hence you can use all model loading/ inferencing methods from the ```torch``` library. [Here](https://docs.pytorch.org/tutorials/beginner/basics/intro.html) is a very good tutorial going through naive features of ```torch``` library.<br><br>
-> In addition, ```transformers``` also provides a LOT of other utility functions that comes *extremey* handy for training/ managibg/ running neural netrowrk models. This includes some very flexiable ways of loding models from existing checkpoints. Here's a brief explination of what's hapenning in the the code:<br>
+> In addition, ```transformers``` also provides a LOT of other utility functions that comes *extremey* handy for training/ managing/ running neural network models. This includes some very flexiable ways of loding models from existing checkpoints. Here's a brief explanation of what's happening in the the code:<br>
 >
 > - To create a text classification model, we first need to determine how many classes are there to begin with. For example, a typical text classification task would be sentimental analysis, where model predicts if the input sentence were 'positive' or 'negative' (*I love fish!!* vs *I hate fish!!*). In this case we'll have total number of 2 classes (positive/ negative). Here, the number of classes is the size of the total vocabulary from the previous loaded model, ```model.config.vocab_size```.
 >
@@ -477,7 +477,7 @@ model = AutoModelForSequenceClassification.from_pretrained(
 
 As you can see from here, we will be using sequence classification model for our text generation task:
 
-```python
+```python{title="python"}
 >>> model
 Qwen3ForSequenceClassification(
   (model): Qwen3Model(
@@ -489,7 +489,7 @@ Sequence classification models from ```transformers``` library, including our ``
 
 So, using our classification model, let's do some text generation:
 
-```python
+```python{title="python"}
 max_new_tokens = 20
 example = "How are you?"
 formatted_example = encode(example)  ## format as chats
@@ -552,7 +552,7 @@ flowchart-elk TB
     classDef default fill: transparent, bg-color: transparent
 {{< /mermaid >}}
 
-The tree above shows the top three words predicted by the model at each generation step. The numbers represent the token scores for the corresponding words, as output by the model. The red lines mark the path of tokens with the highest scores at each generation step. What we see is a tree of many possible words within a forest of all possible branches that can follow our starting word. This branching process lookes like this:
+The tree above shows the top three words predicted by the model at each generation step. The numbers represent the token scores for the corresponding words, as output by the model. The red lines mark the path of tokens with the highest scores at each generation step. What we see is a tree of many possible words within a forest of all possible branches that can follow our starting word. This branching process looks like this:
 
 {{< mermaid >}}
 ---
@@ -576,7 +576,7 @@ flowchart TB
 {{< /mermaid >}}
 
 
-This 'pathing' shares stricking similarities with reforcement learning:
+This 'patting' shares sticking similarities with refoulement learning:
 
 {{< mermaid >}}
 ---
