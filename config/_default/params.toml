@@ -34,7 +34,9 @@ rssnext = { }
 advertisement = { }
 
 [header]
-layout = "fixed-fill"
+# layout = "fixed-fill"
+layout = "floating"
+mobileMenuStyle = "dropdown"
 
 [footer]
 showMenu = true
